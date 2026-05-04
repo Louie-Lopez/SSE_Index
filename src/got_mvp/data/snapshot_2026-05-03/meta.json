@@ -1,8 +1,8 @@
 {
   "snapshot_date": "2026-05-03",
   "source": "user-hexin-ifind-ds-edb-mcp get_edb_data / user-hexin-ifind-ds-news-mcp search_news",
-  "refreshed_at": "2026-05-04T16:30:00+08:00",
-  "edb_query_window": "上证综指日度（20260410-20260503）；月度序列（202511-202605）",
+  "refreshed_at": "2026-05-05T00:21:23+08:00",
+  "edb_query_window": "上证综指日度（20260410-20260503）get_edb_data；中国PMI/CPI/社融存量同比 月度（202511-202605）；美国非农季调（202511-202605）",
   "news_previous_trading_day": "2026-04-30",
   "news_time_start": "2026-04-30",
   "news_time_end": "2026-05-03",

@@ -2,7 +2,7 @@
 
 **项目核心**：在某一 **交易日 D** 上，综合宏观、外溢与多层资讯，对 **上证综指走势作单日判断**（方向、尺度、置信与可证伪条件等），并与当日快照中的 **上证近端序列**对齐。
 
-面向**第一次接触本仓库**的读者：上述判断由一条「多源数据 + 多节点报告 → 归并 → 决策 → 批判 → 程序化评估」的 **Graph of Thoughts (GoT) 最小闭环** 支撑。**不内置大模型调用**；各节点产出为磁盘上的 JSON，由你在 Cursor / 其它环境中按 `prompt_md` 生成后，用 **`run_mvp`** 读入、编排并输出汇总。
+面向**第一次接触本仓库**的读者：上述判断由一条「多源数据 + 多节点报告 → 归并 → 决策 → 批判 → 程序化评估」的 **Graph of Thoughts (GoT) 最小闭环** 支撑。各节点产出为磁盘上的 JSON，约定见 `prompt_md/节点/*.md`。**推荐**：配置 **`GOT_LOCAL_INFER`** 后运行 **`generate_agent_outputs`**（每节点一次子进程：**节点 `.md` 全文 + 上下文 JSON** → stdin → stdout 单 JSON → 契约校验 → **覆盖**写入 8 个文件），再 **`run_mvp`** 读盘。无 CLI 时可用 **`--synth-fallback`**（仅离线模版，非推理）。
 
 更偏方法与验收的说明见根目录 **[`GoT_MVP_说明书.md`](./GoT_MVP_说明书.md)**；批判与 MCP 局限等见 **[`待升级环节说明书.md`](./待升级环节说明书.md)**。
 
@@ -44,7 +44,8 @@
 | `src/got_mvp/graph.py` | 初始状态、LangGraph 或顺序执行、**`--decision-only`** 分支。 |
 | `src/got_mvp/nodes.py` | 读盘校验各节点 JSON。 |
 | `src/got_mvp/evaluation.py` | 矛盾粗检与写 `data/evaluation/`。 |
-| `src/got_mvp/support/` | `snapshot_loader`、`node_output_json`（含 **`HumanInput_{D}.json`** 占位）、`cn_trading_days` 等。 |
+| `src/got_mvp/support/` | `snapshot_loader`、`node_output_json`（含 **`HumanInput_{D}.json`** 占位）、`agent_snapshot_generator`（程序化生成 8 节点）、`cn_trading_days` 等。 |
+| `src/got_mvp/generate_agent_outputs.py` | CLI：`--agent-dir` + `--snapshot-date`，覆盖写入 8 个节点 JSON。 |
 
 ---
 
@@ -88,13 +89,27 @@ python -m pip install -r requirements.txt
 | `GOT_SNAPSHOT_DATE` / `--snapshot-date` | 与 **`data/snapshot_{D}/`** 目录名、`{父目录}/{D}/` 对齐；未设则默认本机当天。 |
 | `GOT_AGENT_OUTPUT_DIR` / `--agent-dir` | Agent JSON 的**父目录**；实际读取 **`父目录/{D}/`**。 |
 | `GOT_DECISION_ONLY` / `--decision-only` | 仅决策链读盘模式（见**第 5 节**）。 |
+| `GOT_LOCAL_INFER` | **本地推理子进程**：`shlex` 解析出的 argv；整段「节点 `.md` + 上下文 JSON」以 **UTF-8 stdin** 送入；stdout 须为单个 JSON 对象。例：`claude -p -`（Claude Code，以 `-` 从 stdin 读提示词，视你本机 CLI 文档为准）。 |
+| `GOT_LOCAL_INFER_TIMEOUT_SEC` | 单节点子进程超时（秒），默认 `900`。 |
+| `GOT_LOCAL_INFER_CWD` | 子进程工作目录（可选）。 |
+| `--generate-agent-first` | 在 `run_mvp` 内先调用 **`generate_agent_outputs`**，再读盘跑图（与 `--decision-only` 互斥）。 |
+| `--infer-local` | 与上项联用：强制走本地推理（仍须 `GOT_LOCAL_INFER`）。 |
+| `--synth-fallback` | 与上项联用：**不**调本地 CLI，改用 `snapshot_synth_v1` 模版（离线/CI）。 |
 
 可复制根目录 **`.env.example`** 为 **`.env`**（`.gitignore` 已忽略 `.env`）。
 
 ### 6.3 推荐执行顺序（新手上手）
 
 1. 按 **`MCP_宏观_EDB_取数.md`**、**`MCP_资讯_取数.md`** 用 MCP 写入 **`src/got_mvp/data/snapshot_{D}/`**（`meta.json` 中 **`snapshot_date` = D**）。
-2. 按 **`prompt_md/节点/*.md`** 生成 8 个节点 JSON，放入 **`{父目录}/{D}/`**。
+2. **覆盖生成** 8 个节点 JSON。**默认**为 **本地推理**：已设置 `GOT_LOCAL_INFER` 时，每节点一次子进程，**prompt 全文 + 结构化 JSON** 经 stdin 交给你的 CLI（如 Claude Code），stdout 解析为 JSON；`_generator.engine` 为 **`local_infer`**。离线或 CI 可加 **`--synth-fallback`**（`snapshot_synth_v1`，非推理）。**不覆盖**已存在的 **`HumanInput_{D}.json`** 正文。
+
+```powershell
+$env:GOT_LOCAL_INFER = "claude -p -"
+python -m src.got_mvp.generate_agent_outputs --agent-dir 父目录 --snapshot-date D
+# 或显式：… --infer-local
+# 离线模版：… --synth-fallback
+```
+
 3. 运行（**`D`** 与快照一致；仓库自带示例日 **`2026-05-03`** 可对齐试跑）：
 
 ```powershell
@@ -103,7 +118,9 @@ $env:GOT_SNAPSHOT_DATE="2026-05-03"
 python -m src.got_mvp.run_mvp
 ```
 
-或一行：`python -m src.got_mvp.run_mvp --agent-dir 父目录 --snapshot-date D`
+或一行（生成与跑图一步完成；须已配置 `GOT_LOCAL_INFER`，或再加 `--synth-fallback`）：`python -m src.got_mvp.run_mvp --agent-dir 父目录 --snapshot-date D --generate-agent-first`
+
+若已单独执行过第 2 步，可只跑：`python -m src.got_mvp.run_mvp --agent-dir 父目录 --snapshot-date D`
 
 缺快照或与 `meta.snapshot_date` 不一致时会报错；仅当目录与日期未就绪时才会缺文件。
 
@@ -147,10 +164,11 @@ stdout 为一份 JSON，主要键包括：
 
 ---
 
-## 10. 独立脚本（不参与 `run_mvp`）
+## 10. 独立脚本
 
 | 命令 | 作用 |
 |------|------|
+| `python -m src.got_mvp.generate_agent_outputs --agent-dir 父目录 --snapshot-date D` | 默认：已设 **`GOT_LOCAL_INFER`** 时用 **本地推理**（`_generator.engine` = `local_infer`）；否则须传 **`--synth-fallback`**。 |
 | `python -m src.got_mvp.support.cn_trading_days YYYY-MM-DD` | 推算上一交易日与 `search_news` 的 `time_start` / `time_end`。 |
 | `python -m src.got_mvp.support.build_snapshot_news_dedupe_*`（文件名须含 `dedupe`） | 手工合并去重资讯快照；按需运行。 |
 

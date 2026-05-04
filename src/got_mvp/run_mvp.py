@@ -7,6 +7,7 @@ import json
 import os
 
 from .evaluation import evaluate_run, format_logs
+from .generate_agent_outputs import run_generate_agent_outputs
 from .graph import run_graph
 
 
@@ -30,6 +31,21 @@ def main() -> None:
         action="store_true",
         help="仅重跑决策链读盘与 evaluation：保持五路与归并等 JSON 不变，先更新 HumanInput_{D}.json 与/或 DecisionNode.json；不经过 LangGraph 批判回流",
     )
+    parser.add_argument(
+        "--generate-agent-first",
+        action="store_true",
+        help="在跑图前执行 generate_agent_outputs：按当日快照与各节点 .md 覆盖写入 8 个节点 JSON（不覆盖 HumanInput 已有文件正文）。",
+    )
+    parser.add_argument(
+        "--infer-local",
+        action="store_true",
+        help="与 --generate-agent-first 联用：强制本地推理（须 GOT_LOCAL_INFER）；与 --synth-fallback 互斥。",
+    )
+    parser.add_argument(
+        "--synth-fallback",
+        action="store_true",
+        help="与 --generate-agent-first 联用：使用 snapshot_synth_v1 离线模版，不要求本地 CLI。",
+    )
     args = parser.parse_args()
     if args.snapshot_date.strip():
         os.environ["GOT_SNAPSHOT_DATE"] = args.snapshot_date.strip()
@@ -47,6 +63,22 @@ def main() -> None:
             "请指定 Agent 输出父目录: python -m src.got_mvp.run_mvp --agent-dir 父目录\n"
             "（读取 父目录/YYYY-MM-DD/ 下各节点 JSON）或设置 GOT_AGENT_OUTPUT_DIR。"
         )
+
+    if args.generate_agent_first:
+        if decision_only:
+            raise SystemExit("--generate-agent-first 与 --decision-only 互斥。")
+        if args.infer_local and args.synth_fallback:
+            raise SystemExit("--infer-local 与 --synth-fallback 互斥。")
+        try:
+            run_generate_agent_outputs(
+                agent_dir,
+                args.snapshot_date,
+                print_summary=False,
+                infer_local=args.infer_local,
+                synth_fallback=args.synth_fallback,
+            )
+        except ValueError as e:
+            raise SystemExit(str(e)) from e
 
     state = run_graph(agent_outputs_dir=agent_dir, decision_only=decision_only)
     report = evaluate_run(state)
