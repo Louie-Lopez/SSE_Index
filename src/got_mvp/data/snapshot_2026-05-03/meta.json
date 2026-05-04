@@ -1,0 +1,10 @@
+{
+  "snapshot_date": "2026-05-03",
+  "source": "user-hexin-ifind-ds-edb-mcp get_edb_data / user-hexin-ifind-ds-news-mcp search_news",
+  "refreshed_at": "2026-05-04T16:30:00+08:00",
+  "edb_query_window": "上证综指日度（20260410-20260503）；月度序列（202511-202605）",
+  "news_previous_trading_day": "2026-04-30",
+  "news_time_start": "2026-04-30",
+  "news_time_end": "2026-05-03",
+  "news_window": "search_news 闭区间日期：time_start=2026-04-30（上一交易日，相对 snapshot_date=2026-05-03 由 src.got_mvp.support.cn_trading_days 推算），time_end=2026-05-03（取数日）；语义：上一交易日收盘后增量至取数日当前（MCP 仅日期粒度）。落盘仅「日期|标题」，多 query 合并去重；命中含历史转载需核对日期。"
+}
