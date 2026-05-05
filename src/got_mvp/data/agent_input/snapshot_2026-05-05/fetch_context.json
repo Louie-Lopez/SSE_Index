@@ -1,0 +1,46 @@
+{
+  "snapshot_calendar_date": "2026-05-05",
+  "sse_anchor_last_trading_day_on_or_before_snapshot": "2026-04-30",
+  "sse_ten_trading_days_oldest_first": [
+    "2026-04-17",
+    "2026-04-20",
+    "2026-04-21",
+    "2026-04-22",
+    "2026-04-23",
+    "2026-04-24",
+    "2026-04-27",
+    "2026-04-28",
+    "2026-04-29",
+    "2026-04-30"
+  ],
+  "edb_sse_daily_compact_span": "20260417-20260430",
+  "edb_sse_query_zh_template": "上证综指收盘价 日度 （20260417-20260430）每日数值",
+  "macro_monthly_compact_span": "（202511-202604）",
+  "macro_monthly_query_segment_zh": "（202511-202604）每月数值",
+  "macro_monthly_start_ym": "202511",
+  "macro_monthly_end_ym": "202604",
+  "search_news": {
+    "time_start": "2026-04-30",
+    "time_end": "2026-05-05"
+  },
+  "news_calendar_context": {
+    "snapshot_date": "2026-05-05",
+    "previous_trading_day": "2026-04-30"
+  },
+  "cn_trading_days_json_compat": {
+    "snapshot_date": "2026-05-05",
+    "previous_trading_day": "2026-04-30",
+    "search_news": {
+      "time_start": "2026-04-30",
+      "time_end": "2026-05-05"
+    }
+  },
+  "meta_patch_suggested_fields": {
+    "snapshot_date": "2026-05-05",
+    "news_previous_trading_day": "2026-04-30",
+    "news_time_start": "2026-04-30",
+    "news_time_end": "2026-05-05",
+    "news_window": "search_news 闭区间日期：time_start=2026-04-30（上一交易日，相对 snapshot_date=2026-05-05 推算），time_end=2026-05-05（取数日）；语义：上一交易日收盘后增量至取数日当前（MCP 仅日期粒度）。"
+  },
+  "generated_at_iso": "2026-05-05T05:17:03.706570+00:00"
+}

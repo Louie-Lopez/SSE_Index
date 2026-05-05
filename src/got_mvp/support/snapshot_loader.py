@@ -1,8 +1,8 @@
-# 【工具】从 ``got_mvp/data/snapshot_{YYYY-MM-DD}/`` 分片合并为 LangGraph 用的 ``snapshot_inputs``；含 Agent 输出目录解析。
+# 【工具】从 ``got_mvp/data/agent_input/snapshot_{YYYY-MM-DD}/`` 分片合并为 LangGraph 用的 ``snapshot_inputs``；含 Agent 输出目录解析。
 # 调用方：graph.py（``build_initial_state``：``load_snapshot_inputs``、``resolved_agent_outputs_dir``）。
 """从磁盘加载分片快照目录，规范为 LangGraph 使用的 ``snapshot_inputs`` 字典。
 
-- **路径**：``got_mvp/data/snapshot_{YYYY-MM-DD}/``（``meta.json`` + 五类业务 JSON + **SSEIndex.json** 上证基线块）。
+- **路径**：``got_mvp/data/agent_input/snapshot_{YYYY-MM-DD}/``（``meta.json`` + 五类业务 JSON + **SSEIndex.json** 上证基线块）。
 - **入口**：``read_snapshot_inputs()`` 与 ``load_snapshot_inputs()`` 等价，纯读盘。
 - **图状态**：结果写入 ``GoTState["snapshot_inputs"]``（见 ``state_types.GoTState``）；其中 **``SSEIndex``** 与 **``CNMacroData``** 分键存放，加载器**不**把上证序列合并进中国宏观块。
 """
@@ -18,6 +18,12 @@ NodeName = Literal["CNMacroData", "USMacroData", "MacroNews", "MesoNews", "Micro
 
 _GOT_MVP_DIR = Path(__file__).resolve().parent.parent
 _DATA_DIR = _GOT_MVP_DIR / "data"
+_AGENT_INPUT_ROOT = _DATA_DIR / "agent_input"
+
+
+def snapshot_dir_for_date(day: str) -> Path:
+    """单日分片快照目录：``data/agent_input/snapshot_{YYYY-MM-DD}/``。"""
+    return _AGENT_INPUT_ROOT / f"snapshot_{day}"
 
 # 五类输入节点对应快照；上证日度基线单独文件，见 _SSE_INDEX_KEY。
 _REQUIRED_BLOCK_KEYS = ("CNMacroData", "USMacroData", "MacroNews", "MesoNews", "MicroNews")
@@ -43,8 +49,8 @@ def resolved_snapshot_date() -> str:
 
 
 def resolved_snapshot_dir() -> Path:
-    """分片快照目录：`data/snapshot_{YYYY-MM-DD}/`（每模块独立 JSON + meta.json）。"""
-    return _DATA_DIR / f"snapshot_{resolved_snapshot_date()}"
+    """分片快照目录：`data/agent_input/snapshot_{YYYY-MM-DD}/`（每模块独立 JSON + meta.json）。"""
+    return snapshot_dir_for_date(resolved_snapshot_date())
 
 
 def resolved_agent_outputs_dir(base: str) -> str:
@@ -152,8 +158,8 @@ def _load_edb_snapshot() -> Dict[str, Dict[str, str]]:
     if not split_dir.is_dir():
         raise FileNotFoundError(
             f"缺少分片快照目录: {split_dir}\n"
-            f"当前解析日期为 {day}。请按 src/got_mvp/prompt_md/取数/MCP_宏观_EDB_取数.md 与 MCP_资讯_取数.md 写入该目录"
-            f"（meta.json + CNMacroData.json … MicroNews.json + SSEIndex.json），或调整 GOT_SNAPSHOT_DATE 与目录名一致。"
+            f"当前解析日期为 {day}。请在 data/agent_input/ 下按 MCP_宏观_EDB_取数.md 与 MCP_资讯_取数.md 写入"
+            f" snapshot_{day}/（meta.json + CNMacroData.json … MicroNews.json + SSEIndex.json），或调整 GOT_SNAPSHOT_DATE。"
         )
     return _load_split_snapshot(day, split_dir)
 

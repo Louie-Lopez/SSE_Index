@@ -4,13 +4,13 @@
 
 **落盘约定（与接口返回的区别）**：`search_news` 等接口返回里通常含 **`资讯标题`、`资讯内容`（片段）、`日期`、`URL`**。本项目的 **`MacroNews` / `MesoNews` / `MicroNews` 快照字段只写入「日期 + 标题」**（见 §二行格式），**不写入正文片段**；需要全文或更长片段时请用 **`URL`** 另行打开或二次请求。**`summary`** 为综述字段：**可多句、多段**，不限一句话；篇幅以说清要点为准（仍须为合法 JSON 字符串，换行可写 `\n`）。
 
-本文仅覆盖 **同花顺 iFinD 资讯 MCP**（`search_news` / `search_trending_news` 等）。**宏观 EDB** 见 **[`MCP_宏观_EDB_取数.md`](./MCP_宏观_EDB_取数.md)**。与宏观共用目录 **`src/got_mvp/data/snapshot_{YYYY-MM-DD}/`**，与 **`SSEIndex.json`**、`CNMacroData.json` 等同层落盘即可。
+本文仅覆盖 **同花顺 iFinD 资讯 MCP**（`search_news` / `search_trending_news` 等）。**宏观 EDB** 见 **[`MCP_宏观_EDB_取数.md`](./MCP_宏观_EDB_取数.md)**。与宏观共用目录 **`src/got_mvp/data/agent_input/snapshot_{YYYY-MM-DD}/`**，与 **`SSEIndex.json`**、`CNMacroData.json` 等同层落盘即可。
 
 ---
 
 ## 一、本模块写入哪些文件
 
-相对项目根 **`src/got_mvp/data/snapshot_{YYYY-MM-DD}/`**：
+相对项目根 **`src/got_mvp/data/agent_input/snapshot_{YYYY-MM-DD}/`**：
 
 | 文件 | 说明 |
 |------|------|
@@ -99,17 +99,25 @@
 
 ### 4.0 必须先算日期再调 MCP（禁止拍脑袋区间）
 
-1. **取数日**：与目录 **`snapshot_{YYYY-MM-DD}`** 及 **`meta.snapshot_date`** 一致（可为周末或法定假日；不要求当天开市）。  
-2. **上一交易日**：严格早于取数日 0 点的、最近一次 **上交所交易日**（含国务院调休的周末补班）。仓库内用 **`src.got_mvp.support.cn_trading_days`**（依赖 **`chinesecalendar`**，见项目根 **`requirements.txt`**）统一推算，避免与真实休市错位。  
-3. **命令行**（将 `YYYY-MM-DD` 换成取数日）：
+1. **取数日**：与 **`data/agent_input/`** 下目录 **`snapshot_{YYYY-MM-DD}`** 及 **`meta.snapshot_date`** 一致（可为周末或法定假日；不要求当天开市）。未显式指定时，与 **[`MCP_宏观_EDB_取数.md`](./MCP_宏观_EDB_取数.md) §〇** 相同，默认取 **`date.today()`**（通过统一工具，见下）。  
+2. **上一交易日**：严格早于取数日 0 点的、最近一次 **上交所交易日**（含国务院调休的周末补班）。由 **`src.got_mvp.support.cn_trading_days`**（依赖 **`chinesecalendar`**）推算；宏观与资讯共用同一套日历逻辑。  
+3. **推荐：统一入口**（宏观 + 资讯窗口一次生成；与 **`MCP_宏观_EDB_取数.md` §〇** 同命令）：
 
 ```bash
-# 在仓库根目录，PYTHONPATH 指向 src（与跑主控一致）
-set PYTHONPATH=src
+python -m src.got_mvp.support.snapshot_fetch_context
+python -m src.got_mvp.support.snapshot_fetch_context 2026-05-03
+python -m src.got_mvp.support.snapshot_fetch_context 2026-05-03 --write
+```
+
+输出 JSON 中的 **`search_news.time_start` / `time_end`**（亦可从 **`cn_trading_days_json_compat`** 或 **`meta_patch_suggested_fields` 的 `news_time_*`** 读取）即为本次应传入 MCP 的日期；**不得**自行用「往前多估几天」代替上一交易日。  
+**仅要资讯窗、不跑宏观时** 仍可用：
+
+```bash
 python -m src.got_mvp.support.cn_trading_days 2026-05-03
 ```
 
-输出 JSON 中的 **`search_news.time_start` / `time_end`** 即为本次应传入 MCP 的日期；**不得**自行用「往前多估几天」代替上一交易日。  
+（与 `snapshot_fetch_context` 内资讯部分等价。）
+
 4. **写入 `meta.json`**：除 **`news_window`** 人读说明外，须同步写入结构化字段（与上一步输出一致）：**`news_previous_trading_day`**、**`news_time_start`**、**`news_time_end`**，便于 diff 与复跑对齐。  
 5. **无 `chinesecalendar` 时**：`support.cn_trading_days` 退化为「仅跳过周六日」；节假日边界可能偏差，**生产取数须安装依赖**。
 
@@ -129,6 +137,6 @@ python -m src.got_mvp.support.cn_trading_days 2026-05-03
 - [ ] 各主题字段是否已通过 **多 query + 去重** 尽量覆盖 **时间窗内** 全部命中（而非仅 Top-1～3）  
 - [ ] 单条 `size` 是否用满；无分页能力时是否已用 **轮换关键词** 榨干增量  
 - [ ] 时间窗为 **上一交易日收盘后 → 当前取数时点**（或 ISO 精确窗），且与 **`meta.news_window`** / **`news_time_*`** 一致  
-- [ ] **`meta.json`** 中 **`snapshot_date`** 与目录名一致；**`news_previous_trading_day`** 与 **`python -m src.got_mvp.support.cn_trading_days`** 输出一致  
+- [ ] **`meta.json`** 中 **`snapshot_date`** 与 **`data/agent_input/snapshot_{D}`** 目录名一致；**`news_previous_trading_day`** / **`news_time_*`** 与 **`python -m src.got_mvp.support.snapshot_fetch_context`**（或 **`cn_trading_days`**）输出一致  
 - [ ] 若字段体积极大：仍属预期（全量**标题**）；正文细节不在快照内，若节点需要可提示依赖 URL 或二次拉取  
 - [ ] 是否确认未把 **`资讯内容`** 片段拼进 `policy` 等字段（与「仅标题」约定一致）  

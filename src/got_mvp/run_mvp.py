@@ -60,6 +60,7 @@ def main() -> None:
             "agent_outputs_dir": state.get("agent_outputs_dir"),
             "decision_only": decision_only,
             "evaluation_output_path": report.get("evaluation_output_path"),
+            "core_narrative_md_path": report.get("core_narrative_md_path"),
             "elapsed_ms": state["meta"]["elapsed_ms"],
             "token_estimates": state["meta"]["token_estimates"],
             "prompt_versions": state["meta"]["prompt_versions"],

@@ -1,14 +1,40 @@
 # MCP 宏观取数：EDB（中国 / 美国）
 
-本文仅覆盖 **同花顺 iFinD EDB MCP**（`get_edb_data`）。**资讯检索**见 **[`MCP_资讯_取数.md`](./MCP_资讯_取数.md)**。宏观与资讯 JSON 写在同一目录 **`src/got_mvp/data/snapshot_{YYYY-MM-DD}/`**，主控侧由 **`support.snapshot_loader`** 合并读取为 **`snapshot_inputs`**（**`SSEIndex`** 与 **`CNMacroData`** 分键），无需手工再拼一个大 JSON。
+本文仅覆盖 **同花顺 iFinD EDB MCP**（`get_edb_data`）。**资讯检索**见 **[`MCP_资讯_取数.md`](./MCP_资讯_取数.md)**。宏观与资讯 JSON 写在同一目录 **`src/got_mvp/data/agent_input/snapshot_{YYYY-MM-DD}/`**，主控侧由 **`support.snapshot_loader`** 合并读取为 **`snapshot_inputs`**（**`SSEIndex`** 与 **`CNMacroData`** 分键），无需手工再拼一个大 JSON。
 
 **项目锚定**：下游结论对标 **上证综指日度走势**；上证 **日度收益锚** 单独落在 **`SSEIndex.json`**，**不**写入 **`CNMacroData.json`**。`support.snapshot_loader` 读盘后 **`snapshot_inputs["SSEIndex"]`** 与 **`snapshot_inputs["CNMacroData"]`** 分键并存，供归并/决策等阶段作**基线对照**；**中国宏观节点（`CNMacroData`）的 Agent 输入仅使用 `CNMacroData.json`**，避免把指数序列当作同一轮宏观推理的输入。
 
 ---
 
+## 〇、步骤 0：取数日与 MCP 区间（须先于 §三 调 `get_edb_data`）
+
+统一由仓库内 **`python -m src.got_mvp.support.snapshot_fetch_context`** 推算（依赖 **`chinesecalendar`**，与资讯时间窗同源）：
+
+```bash
+# 在仓库根目录执行（与 `python -m src.got_mvp.run_mvp` 同源 path）
+python -m src.got_mvp.support.snapshot_fetch_context
+python -m src.got_mvp.support.snapshot_fetch_context 2026-05-03
+python -m src.got_mvp.support.snapshot_fetch_context 2026-05-03 --write
+```
+
+- **省略日期**：使用本机 **`date.today()`**（系统日历日）作为**取数日**。  
+- **`--write`**：写入 **`src/got_mvp/data/agent_input/snapshot_{YYYY-MM-DD}/fetch_context.json`**（与 `snapshot_loader` 路径一致）；目录不存在则创建。
+
+从 **stdout JSON** 或 **`fetch_context.json`** 读取：
+
+| 键 | 用途 |
+|----|------|
+| **`edb_sse_query_zh_template`** | **§3.1 上证综指** 近 **10 个交易日** 的完整自然语言 query（日度区间已按锚定交易日滚动，勿手填） |
+| **`macro_monthly_compact_span`** / **`macro_monthly_query_segment_zh`** | **§3.2 月度** 表格中 `（YYYYMM-YYYYMM）每月数值` 占位，**以 JSON 为准** 替换文中示例 |
+| **`meta_patch_suggested_fields`** | 建议合并进 **`meta.json`**（含 `snapshot_date`、`news_*`；与 **[`MCP_资讯_取数.md`](./MCP_资讯_取数.md) §4** 一致） |
+
+**禁止**：在未跑上述步骤的情况下，凭估算填写上证 10 日 YYYYMMDD 区间或月度 YYYYMM 区间。
+
+---
+
 ## 一、本模块写入哪些文件
 
-相对项目根 **`src/got_mvp/data/snapshot_{YYYY-MM-DD}/`**：
+相对项目根 **`src/got_mvp/data/agent_input/snapshot_{YYYY-MM-DD}/`**：
 
 | 文件 | 说明 |
 |------|------|
@@ -78,7 +104,7 @@
 
 ### 3.1 上证综指：近 10 个交易日（写入 **`SSEIndex.json`**，不写入 `CNMacroData.json`）
 
-示例 query（日期按快照日 `D` 滚动）：
+示例 query（**日期须来自 §〇 的 `edb_sse_query_zh_template`**，勿照抄下例）：
 
 `上证综指收盘价 日度 （20260415-20260504）每日数值`
 
@@ -86,7 +112,7 @@
 
 ### 3.2 月度序列（近三期）
 
-时间窗口占位：`（202511-202604）每月数值`（按 `D` 向前滚动，略宽于三月以便取最近 3 个有效月）。
+时间窗口占位：`（202511-202604）每月数值`（示例；**实盘以 §〇 的 `macro_monthly_query_segment_zh` / `macro_monthly_compact_span` 为准**，按锚定交易日对应自然月滚动，略宽于三月以便取最近 3 个有效月）。
 
 #### 3.2.1 中国
 
@@ -135,4 +161,4 @@ API **限频**时可分批 `sleep` 重试。
 - [ ] **`CNMacroData.json` 内不含任何 `sse_index_*` 键**（上证字段仅在 **`SSEIndex.json`**）
 - [ ] 上证综指 **10 个交易日** 与 **`SSEIndex.json`** 内 **`sse_index_trace_summary`** 一致
 - [ ] 中国全表（含就业两项）、美国补充项已落字段，无数据标 **未取**
-- [ ] **`meta.json`** 中 **`snapshot_date`** 与目录 **`snapshot_{D}`** 一致
+- [ ] **`meta.json`** 中 **`snapshot_date`** 与 **`data/agent_input/snapshot_{D}`** 目录名一致；EDB / 资讯相关区间与 **`fetch_context.json`**（或 **`snapshot_fetch_context` 最近一次输出）一致

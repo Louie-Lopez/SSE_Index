@@ -100,11 +100,58 @@ def _analyze_contradictions(merged_text: str, evidence_blob: str) -> Tuple[bool,
     return major, points, scores
 
 
-def _evaluation_output_path() -> Path:
+def _evaluation_dir() -> Path:
     day = resolved_snapshot_date()
     root = Path(__file__).resolve().parent / "data" / "evaluation" / day
     root.mkdir(parents=True, exist_ok=True)
-    return root / "contradiction_evaluation.json"
+    return root
+
+
+def _evaluation_output_path() -> Path:
+    return _evaluation_dir() / "contradiction_evaluation.json"
+
+
+def write_core_narrative_md(state: GoTState) -> Path:
+    """将归并、决策、批判三节点的 ``report`` 合并为一份 Markdown，与矛盾评估同目录。"""
+    aggregate = state.get("aggregate") or {}
+    decision = state.get("decision") or state.get("final_output") or {}
+    critic = state.get("critic") or {}
+    day = resolved_snapshot_date()
+    run_id = str(state["meta"].get("run_id", ""))
+
+    def _rep(block: dict[str, Any]) -> str:
+        return str(block.get("report", "")).strip()
+
+    body = "\n".join(
+        [
+            "# GoT 核心叙事（归并 · 决策 · 批判）",
+            "",
+            f"- **snapshot_date**: {day}",
+            f"- **run_id**: {run_id}",
+            "",
+            "---",
+            "",
+            "## AggregateEvidence（归并）",
+            "",
+            _rep(aggregate),
+            "",
+            "---",
+            "",
+            "## DecisionNode（决策）",
+            "",
+            _rep(decision),
+            "",
+            "---",
+            "",
+            "## CriticNode（批判）",
+            "",
+            _rep(critic),
+            "",
+        ]
+    )
+    path = _evaluation_dir() / "got_core_narrative.md"
+    path.write_text(body, encoding="utf-8")
+    return path
 
 
 def evaluate_run(state: GoTState) -> Dict[str, Any]:
@@ -138,8 +185,11 @@ def evaluate_run(state: GoTState) -> Dict[str, Any]:
     out_path = _evaluation_output_path()
     out_path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
+    md_path = write_core_narrative_md(state)
+
     return {
         "evaluation_output_path": str(out_path.resolve()),
+        "core_narrative_md_path": str(md_path.resolve()),
         "major_contradiction": major,
         "contradiction_points": contradiction_points,
         "polarity_scores": scores,

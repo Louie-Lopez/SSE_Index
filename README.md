@@ -2,7 +2,7 @@
 
 **项目核心**：在某一 **交易日 D** 上，综合宏观、外溢与多层资讯，对 **上证综指走势作单日判断**（方向、尺度、置信与可证伪条件等），并与当日快照中的 **上证近端序列**对齐。
 
-面向**第一次接触本仓库**的读者：上述判断由一条「多源数据 + 多节点报告 → 归并 → 决策 → 批判 → 程序化评估」的 **Graph of Thoughts (GoT) 最小闭环** 支撑。各节点产出为磁盘上的 JSON，约定见 `prompt_md/节点/*.md`。**在 Cursor 中**按根目录 **[`SKILL.md`](./SKILL.md)** 完成「节点 prompt + 快照 JSON → 分析 → 节点 JSON」并写入 **`{父目录}/{D}/`** 后，再运行 **`run_mvp`** 读盘。
+面向**第一次接触本仓库**的读者：上述判断由一条「多源数据 + 多节点报告 → 归并 → 决策 → 批判 → 程序化评估」的 **Graph of Thoughts (GoT) 最小闭环** 支撑。各节点产出为磁盘上的 JSON，约定见 `prompt_md/节点/*.md`。按根目录 **[`SKILL.md`](./SKILL.md)**，在 **Agent 会话**（任意模型与界面，不绑定特定产品）中完成「节点 prompt + 快照 JSON → 分析 → 节点 JSON」并写入 **`{父目录}/{D}/`** 后，再运行 **`run_mvp`** 读盘。
 
 更偏方法与验收的说明见根目录 **[`GoT_MVP_说明书.md`](./GoT_MVP_说明书.md)**；批判与 MCP 局限等见 **[`待升级环节说明书.md`](./待升级环节说明书.md)**。
 
@@ -23,9 +23,9 @@
 
 | 阶段 | 位置 | 说明 |
 |------|------|------|
-| 快照（原始输入） | `src/got_mvp/data/snapshot_{D}/` | `meta.json` + 五类业务块 JSON + **`SSEIndex.json`**（上证近端序列，**与 `CNMacroData.json` 分文件**）。由 **`snapshot_loader`** 读入 → `GoTState["snapshot_inputs"]`。资讯仅存「日期 + 标题」行，无正文片段。 |
+| 快照（原始输入） | `src/got_mvp/data/agent_input/snapshot_{D}/` | `meta.json` + 五类业务块 JSON + **`SSEIndex.json`**（上证近端序列，**与 `CNMacroData.json` 分文件**）。由 **`snapshot_loader`** 读入 → `GoTState["snapshot_inputs"]`。资讯仅存「日期 + 标题」行，无正文片段。 |
 | 节点产出（Agent） | `{GOT_AGENT_OUTPUT_DIR}/{D}/` | 8 个节点各一个 `{节点名}.json`；另有人类输入 **`HumanInput_{D}.json`**（见**第 5 节**）。 |
-| 评估输出 | `src/got_mvp/data/evaluation/{D}/` | **`contradiction_evaluation.json`**：五路 `evidence` 与「归并+决策」叙述的程序化对照（方法见文件内 `method_note`）。 |
+| 评估输出 | `src/got_mvp/data/evaluation/{D}/` | **`contradiction_evaluation.json`**：五路 `evidence` 与「归并+决策」叙述的程序化对照；**`got_core_narrative.md`**：归并+决策+批判三节点 `report` 合并副本（可读）。 |
 
 ### 2.2 图结构（与 `graph.py` 一致）
 
@@ -44,8 +44,8 @@
 | `src/got_mvp/graph.py` | 初始状态、LangGraph 或顺序执行、**`--decision-only`** 分支。 |
 | `src/got_mvp/nodes.py` | 读盘校验各节点 JSON。 |
 | `src/got_mvp/evaluation.py` | 矛盾粗检与写 `data/evaluation/`。 |
-| `SKILL.md`（仓库根目录） | 在 Cursor 中生成 8 个节点 JSON 的步骤、输入拼装顺序与契约自检要点。 |
-| `src/got_mvp/support/` | `snapshot_loader`、`node_output_json`（含 **`HumanInput_{D}.json`** 占位）、`cn_trading_days` 等。 |
+| `SKILL.md`（仓库根目录） | 用 Agent 会话生成 8 个节点 JSON 的步骤、输入拼装顺序与契约自检要点。 |
+| `src/got_mvp/support/` | `snapshot_loader`、`snapshot_fetch_context`（取数日 → 上证/月度/资讯 MCP 区间）、`node_output_json`（含 **`HumanInput_{D}.json`** 占位）、`cn_trading_days` 等。 |
 
 ---
 
@@ -80,13 +80,13 @@ python -m src.got_mvp.run_mvp --agent-dir 父目录 --snapshot-date D --decision
 python -m pip install -r requirements.txt
 ```
 
-`chinesecalendar` 用于 `python -m src.got_mvp.support.cn_trading_days <取数日>`，与资讯 MCP 时间窗、`meta.json` 对齐（见 **`MCP_资讯_取数.md`** 第 4.0 节）。
+`chinesecalendar` 用于 **`python -m src.got_mvp.support.snapshot_fetch_context`**（推荐，含上证 10 交易日、月度 EDB 占位、资讯窗）及 **`python -m src.got_mvp.support.cn_trading_days <取数日>`**（仅资讯窗子集），与 MCP 时间窗、`meta.json` 对齐（见 **`MCP_宏观_EDB_取数.md`** §〇、**`MCP_资讯_取数.md`** §4.0）。
 
 ### 6.2 常用变量与参数
 
 | 变量 / 参数 | 含义 |
 |-------------|------|
-| `GOT_SNAPSHOT_DATE` / `--snapshot-date` | 与 **`data/snapshot_{D}/`** 目录名、`{父目录}/{D}/` 对齐；未设则默认本机当天。 |
+| `GOT_SNAPSHOT_DATE` / `--snapshot-date` | 与 **`data/agent_input/snapshot_{D}/`** 目录名、`{父目录}/{D}/` 对齐；未设则默认本机当天。 |
 | `GOT_AGENT_OUTPUT_DIR` / `--agent-dir` | Agent JSON 的**父目录**；实际读取 **`父目录/{D}/`**。 |
 | `GOT_DECISION_ONLY` / `--decision-only` | 仅决策链读盘模式（见**第 5 节**）。 |
 
@@ -94,8 +94,8 @@ python -m pip install -r requirements.txt
 
 ### 6.3 推荐执行顺序（新手上手）
 
-1. 按 **`MCP_宏观_EDB_取数.md`**、**`MCP_资讯_取数.md`** 用 MCP 写入 **`src/got_mvp/data/snapshot_{D}/`**（`meta.json` 中 **`snapshot_date` = D**）。
-2. 在 Cursor 中按 **[`SKILL.md`](./SKILL.md)**，依序用「`prompt_md/节点/{节点}.md` + 本条输入 JSON」生成并**覆盖**写入 **`{Agent 父目录}/{D}/`** 下 8 个 **`{节点名}.json`**（**不覆盖**已有人类正文的 **`HumanInput_{D}.json`**，除非你有意更新）。
+1. 先运行 **`python -m src.got_mvp.support.snapshot_fetch_context [D] --write`** 生成 **`fetch_context.json`**（可选省略 `D` 用本机今日），再按 **`MCP_宏观_EDB_取数.md`**、**`MCP_资讯_取数.md`** 用 MCP 写入 **`src/got_mvp/data/agent_input/snapshot_{D}/`**（`meta.json` 中 **`snapshot_date` = D**，并与 **`fetch_context`** 中区间一致）。
+2. 按 **[`SKILL.md`](./SKILL.md)**，在 **Agent 会话**中依序用「`prompt_md/节点/{节点}.md` + 本条输入 JSON」生成并**覆盖**写入 **`{Agent 父目录}/{D}/`** 下 8 个 **`{节点名}.json`**（**不覆盖**已有人类正文的 **`HumanInput_{D}.json`**，除非你有意更新）。
 3. 运行（**`D`** 与快照一致；仓库自带示例日 **`2026-05-03`** 可对齐试跑）：
 
 ```powershell
@@ -129,7 +129,7 @@ stdout 为一份 JSON，主要键包括：
 |------|------|------|
 | 1 | `run_mvp.py` | 解析 CLI / 环境变量，调用 `graph.run_graph` 与 `evaluation.evaluate_run`，打印 JSON。 |
 | 2 | `graph.py` | `build_initial_state`：读快照、解析 Agent 路径、**`ensure_human_input_stub`**；`run_graph(..., decision_only=…)`：LangGraph **`invoke`** 或 **`run_graph_sequential`**，或 **`_run_decision_only_pipeline`**。 |
-| 3 | `support/snapshot_loader.py` | 读 **`data/snapshot_{D}/`** → `snapshot_inputs`；**`resolved_snapshot_date`**。 |
+| 3 | `support/snapshot_loader.py` | 读 **`data/agent_input/snapshot_{D}/`** → `snapshot_inputs`；**`resolved_snapshot_date`**。 |
 | 4 | `nodes.py` | 读各 `*.json` 并 **`_validate_agent_report`**；决策阶段读 **`HumanInput_{D}.json`**。 |
 | 5 | `support/node_output_json.py` | 节点 JSON 路径；**`HumanInput_{D}`** 占位与可选读入。 |
 | 6 | `evaluation.py` | 写 **`data/evaluation/{D}/contradiction_evaluation.json`**，返回摘要。 |
@@ -155,7 +155,7 @@ stdout 为一份 JSON，主要键包括：
 | `python -m src.got_mvp.support.cn_trading_days YYYY-MM-DD` | 推算上一交易日与 `search_news` 的 `time_start` / `time_end`。 |
 | `python -m src.got_mvp.support.build_snapshot_news_dedupe_*`（文件名须含 `dedupe`） | 手工合并去重资讯快照；按需运行。 |
 
-节点 JSON 的生成流程见根目录 **[`SKILL.md`](./SKILL.md)**（Cursor 内完成，无仓库内生成脚本）。
+节点 JSON 的生成流程见根目录 **[`SKILL.md`](./SKILL.md)**（链外 Agent 会话完成，仓库内无自动生成脚本）。
 
 ---
 

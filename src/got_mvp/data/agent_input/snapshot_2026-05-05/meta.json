@@ -1,0 +1,11 @@
+{
+  "snapshot_date": "2026-05-05",
+  "news_previous_trading_day": "2026-04-30",
+  "news_time_start": "2026-04-30",
+  "news_time_end": "2026-05-05",
+  "news_window": "search_news 闭区间：time_start=2026-04-30（上一交易日），time_end=2026-05-05（取数日）",
+  "edb_sse_daily_span": "20260417-20260430",
+  "edb_monthly_span": "202511-202604",
+  "source": "hexin-ifind EDB + news MCP",
+  "refreshed_at": "2026-05-05T13:17:00+08:00"
+}

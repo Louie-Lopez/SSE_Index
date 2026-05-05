@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# 【去重】离线合并嵌入的 search_news JSON，按「日期+标题」去重后写入 ``got_mvp/data/snapshot_2026-05-03/`` 下 Macro/Meso/Micro 资讯 JSON。
+# 【去重】离线合并嵌入的 search_news JSON，按「日期+标题」去重后写入 ``got_mvp/data/agent_input/snapshot_2026-05-03/`` 下 Macro/Meso/Micro 资讯 JSON。
 # 调用方：无库内 import；由人工 ``python -m src.got_mvp.support.build_snapshot_news_dedupe_20260503`` 执行。
-"""【去重 / dedupe】一次性离线脚本：多轮 search_news 嵌入 JSON 合并，按「日期+标题」去重后写入 snapshot_2026-05-03。
+"""【去重 / dedupe】一次性离线脚本：多轮 search_news 嵌入 JSON 合并，按「日期+标题」去重后写入 data/agent_input/snapshot_2026-05-03。
 
 文件名须含 ``dedupe``（或与「去重」同义），避免与在线 MCP 取数主流程混淆；详见 ``prompt_md/取数/MCP_资讯_取数.md`` §3.1。
 """
@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "data" / "snapshot_2026-05-03"
+OUT = ROOT / "data" / "agent_input" / "snapshot_2026-05-03"
 
 # 各次 MCP 返回的 data.data JSON 字符串（仅作合并源；已剔除 备注 行对象）
 RAW_BLOCKS: dict[str, list[str]] = {

@@ -1,9 +1,9 @@
 # 【工具】A 股上一交易日与 search_news 的 time_start / time_end 推算（依赖 chinesecalendar，无则退化周末跳过）。
-# 调用方：无库内 import；由 CLI ``python -m src.got_mvp.support.cn_trading_days`` 人工运行，供 MCP 资讯取数与 meta 对齐（见 prompt_md/取数/MCP_资讯_取数.md）。
+# 调用方：无库内 import；由 CLI ``python -m src.got_mvp.support.cn_trading_days`` 人工运行，供 MCP 资讯取数与 meta 对齐。上证/月度窗与默认取数日见 ``snapshot_fetch_context``（prompt_md/取数/*.md §步骤 0）。
 """A 股交易日推算：用于资讯 MCP 的 time_start / time_end 与 meta 对齐。
 
 口径与 `prompt_md/取数/MCP_资讯_取数.md` 一致：
-- **取数日**：快照目录名 / `meta.snapshot_date`（日历日，可为周末）。
+- **取数日**：`data/agent_input/snapshot_*` 目录名后缀 / `meta.snapshot_date`（日历日，可为周末）。
 - **上一交易日**：严格早于取数日 0 点的、最近一次上交所交易日（含调休工作日）。
 - **search_news**：`time_start` = 上一交易日 `YYYY-MM-DD`，`time_end` = 取数日 `YYYY-MM-DD`
   （工具仅支持日期时，语义为「上一交易日自然日～取数日自然日」闭区间）。
@@ -34,6 +34,45 @@ def previous_trading_day_before(ref: date) -> date:
     while not _is_sse_trading_day(d):
         d -= timedelta(days=1)
     return d
+
+
+def last_trading_day_on_or_before(ref: date) -> date:
+    """``ref`` 当日（含）往回的最近一个 A 股交易日；取数日可为周末/假日。
+
+    用于 **上证综指日度** 等「截至取数日已收盘」的锚定；与 ``previous_trading_day_before`` 不同：若 ``ref`` 本身是交易日则返回 ``ref``。
+    """
+    d = ref
+    for _ in range(400):
+        if _is_sse_trading_day(d):
+            return d
+        d -= timedelta(days=1)
+    raise ValueError(f"400 日内未找到不晚于 {ref} 的交易日（检查日历数据）")
+
+
+def n_trading_days_ending_at(anchor: date, n: int) -> list[date]:
+    """以 ``anchor`` 为**最近**一日，向前数 ``n`` 个上交所交易日，返回 **旧→新**。"""
+    if n < 1:
+        raise ValueError("n 须 >= 1")
+    out_rev: list[date] = []
+    d = anchor
+    while len(out_rev) < n:
+        if _is_sse_trading_day(d):
+            out_rev.append(d)
+        d -= timedelta(days=1)
+    return list(reversed(out_rev))
+
+
+def macro_edb_month_compact_span(anchor: date, *, inclusive_months: int = 6) -> tuple[str, str]:
+    """月度 EDB ``（YYYYMM-YYYYMM）`` 占位：锚定月为结束月，往前共 ``inclusive_months`` 个自然月（与 MCP_宏观_EDB_取数 示例对齐）。"""
+    if inclusive_months < 1:
+        raise ValueError("inclusive_months 须 >= 1")
+    end_idx = anchor.year * 12 + anchor.month - 1
+    start_idx = end_idx - (inclusive_months - 1)
+    sy, sm_raw = divmod(start_idx, 12)
+    sm = sm_raw + 1
+    start_ym = f"{sy:04d}{sm:02d}"
+    end_ym = f"{anchor.year:04d}{anchor.month:02d}"
+    return start_ym, end_ym
 
 
 @dataclass(frozen=True)
