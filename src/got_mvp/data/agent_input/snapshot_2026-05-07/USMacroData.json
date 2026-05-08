@@ -1,0 +1,64 @@
+{
+  "snapshot_date": "2026-05-07",
+  "source": "EDB + MCP资讯",
+  "cpi_yoy": [
+    {"month": "2026-03", "value": 3.3, "note": "从2月2.4%大幅跳升，能源通胀激增（霍尔木兹危机驱动）"},
+    {"month": "2026-02", "value": 2.4},
+    {"month": "2026-01", "value": 2.4},
+    {"month": "2025-12", "value": 2.7}
+  ],
+  "nonfarm_payroll": [
+    {"month": "2026-03", "value": 178000, "note": "大幅反弹，教育医疗罢工复工+天气转暖建筑业贡献"},
+    {"month": "2026-02", "value": -133000, "note": "下修值，受罢工影响"},
+    {"month": "2026-01", "value": 160000},
+    {"month": "2025-12", "value": -17000}
+  ],
+  "adp_april": {
+    "value": 109000,
+    "consensus": 99000,
+    "note": "4月ADP小非农+10.9万，超预期（预期9.9万），创2025年1月以来最大增幅；主要由教育医疗+6.1万和交通运输+2.5万贡献",
+    "date": "2026-05-06"
+  },
+  "official_april_nonfarm": {
+    "status": "待公布",
+    "release_date": "2026-05-08",
+    "consensus_forecast": 62000,
+    "consensus_unemployment": 0.043,
+    "note": "市场预期4月仅+6.2万（大幅放缓），ADP超预期但与官方关联性有限"
+  },
+  "fomc": {
+    "decision": "维持3.5%-3.75%不变",
+    "vote": "8:4（4人反对，为1992年来最大分歧）",
+    "date": "2026-04-29至30",
+    "tone": "明确偏鹰：通胀高企、能源价格上涨、核心PCE预期上调至3.2%",
+    "key_signal": "降息进程暂停；市场已完全定价2026年全年不降息，加息概率约25%",
+    "june_no_change_prob": 0.935,
+    "context_update": "霍尔木兹危机缓和使通胀压力有望显著下降，FOMC鹰派约束或在未来数周内出现松动",
+    "powell_succession": "鲍威尔5/15卸任，沃什接任；5/7报道'关注沃什接任后政策是否转向宽松'"
+  },
+  "oil_price": {
+    "brent_before": 113,
+    "brent_now": "约100-103（5/6大幅下跌9-11%后）",
+    "wti_low": "盘中一度跌破100美元/桶",
+    "note": "美伊接近签'一页备忘录'结束战事，油价地缘溢价集中释放；5/7国内期货原油继续跌超4%",
+    "risk": "双方尚未正式签协议，特朗普表示协议'非板上钉钉'，伊朗48小时内需给出正式答复"
+  },
+  "ism_pmi": {
+    "apr": 52.7,
+    "note": "ISM制造业PMI继续扩张"
+  },
+  "us_markets_5_6": {
+    "nasdaq": {"change_pct": 2.02, "note": "续创历史新高，收25838.94"},
+    "sp500": {"change_pct": 1.46, "note": "续创历史新高，收7365.12"},
+    "dow": {"change_pct": 1.24, "change_pts": 600},
+    "amd": {"change_pct": 18, "note": "续创历史新高，市值超6800亿美元"},
+    "nvidia": {"change_pct": 5.68, "note": "市值重回5万亿美元上方"},
+    "hxc_china_dragon": {"change_pct": 3.45},
+    "context": "地缘政治担忧缓和+AMD财报超预期共同驱动"
+  },
+  "durable_goods_mar": {
+    "mom": 0.8,
+    "consensus": 0.5,
+    "note": "3月耐用品订单超预期"
+  }
+}

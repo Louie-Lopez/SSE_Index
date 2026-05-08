@@ -1,0 +1,9 @@
+{
+  "snapshot_date": "2026-05-07",
+  "news_previous_trading_day": "2026-05-06",
+  "news_time_start": "2026-05-06",
+  "news_time_end": "2026-05-07",
+  "edb_sse_daily_compact_span": "20260421-20260507",
+  "edb_monthly_compact_span": "202512-202605",
+  "refreshed_at": "2026-05-07T09:15:00+08:00"
+}

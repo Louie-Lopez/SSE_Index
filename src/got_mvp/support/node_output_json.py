@@ -50,6 +50,35 @@ def node_output_json_path(run_dir: Path, stem: str) -> Path:
     return run_dir / f"{stem}.json"
 
 
+def _fix_unescaped_quotes(text: str) -> str:
+    """修复 JSON 字符串值内部未转义的裸双引号。"""
+    result = list(text)
+    i = 0
+    while i < len(text):
+        if text[i] != '"':
+            i += 1
+            continue
+        i += 1  # 进入字符串
+        while i < len(text):
+            ch = text[i]
+            if ch == '\\':
+                i += 2
+                continue
+            if ch == '"':
+                j = i + 1
+                while j < len(text) and text[j] in ' \t\r\n':
+                    j += 1
+                if j < len(text) and text[j] in ':,}]"':
+                    i += 1
+                    break  # 合法边界
+                else:
+                    result[i] = '\\"'  # 内容引号，转义
+                    i += 1
+                    continue
+            i += 1
+    return ''.join(result)
+
+
 def load_node_output_json(run_dir: str | Path, stem: str) -> dict[str, Any]:
     base = Path(run_dir).resolve()
     path = node_output_json_path(base, stem)
@@ -59,7 +88,7 @@ def load_node_output_json(run_dir: str | Path, stem: str) -> dict[str, Any]:
             f"请按 src/got_mvp/prompt_md/节点/{stem}.md 要求，由 Agent 生成同名 JSON（仅此一轮、无跨节点记忆）。"
         )
     text = path.read_text(encoding="utf-8")
-    return json.loads(text)
+    return json.loads(_fix_unescaped_quotes(text))
 
 
 def load_optional_node_json(run_dir: str | Path, stem: str) -> dict[str, Any] | None:

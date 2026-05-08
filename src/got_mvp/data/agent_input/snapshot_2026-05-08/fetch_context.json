@@ -1,0 +1,23 @@
+{
+  "snapshot_calendar_date": "2026-05-08",
+  "note": "开盘前取数：EDB数据截至2026-05-07，资讯窗仅2026-05-07单日",
+  "sse_anchor_last_trading_day_on_or_before_snapshot": "2026-05-07",
+  "sse_ten_trading_days_oldest_first": [
+    "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24",
+    "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30",
+    "2026-05-06", "2026-05-07"
+  ],
+  "edb_sse_daily_compact_span": "20260421-20260507",
+  "macro_monthly_compact_span": "（202512-202605）",
+  "search_news": {
+    "time_start": "2026-05-07",
+    "time_end": "2026-05-07"
+  },
+  "meta_patch_suggested_fields": {
+    "snapshot_date": "2026-05-08",
+    "news_previous_trading_day": "2026-05-07",
+    "news_time_start": "2026-05-07",
+    "news_time_end": "2026-05-07"
+  },
+  "generated_at_iso": "2026-05-08T10:40:00+08:00"
+}

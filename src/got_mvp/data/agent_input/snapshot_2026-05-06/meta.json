@@ -1,0 +1,12 @@
+{
+  "snapshot_date": "2026-05-06",
+  "news_previous_trading_day": "2026-04-30",
+  "news_time_start": "2026-04-30",
+  "news_time_end": "2026-05-06",
+  "news_window": "search_news 闭区间：time_start=2026-04-30（上一交易日），time_end=2026-05-06（取数日，五一假期后首个交易日）",
+  "edb_sse_daily_compact_span": "20260420-20260506",
+  "edb_monthly_compact_span": "202512-202605",
+  "source": "hexin-ifind EDB + news MCP",
+  "refreshed_at": "2026-05-06T09:15:00+08:00",
+  "note": "2026-05-06为五一假期后A股首个交易日，市场今日开盘中，EDB尚无2026-05-06收盘价，上证序列实际有效9个交易日（2026-04-20至2026-04-30）"
+}

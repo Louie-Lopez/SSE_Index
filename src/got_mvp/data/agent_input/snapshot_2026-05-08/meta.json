@@ -1,0 +1,11 @@
+{
+  "snapshot_date": "2026-05-08",
+  "note": "开盘前取数；EDB数据截至前一交易日2026-05-07，资讯窗口仅2026-05-07单日（排除今日数据）",
+  "news_previous_trading_day": "2026-05-07",
+  "news_time_start": "2026-05-07",
+  "news_time_end": "2026-05-07",
+  "edb_sse_daily_compact_span": "20260421-20260507",
+  "edb_monthly_compact_span": "202512-202605",
+  "source": "同花顺iFinD EDB MCP + 资讯MCP",
+  "refreshed_at": "2026-05-08T10:40:00+08:00"
+}
